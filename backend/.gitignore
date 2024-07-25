@@ -42,3 +42,5 @@ ehthumbs.db
 
 
 package-lock.json
+
+src/database/config.json
