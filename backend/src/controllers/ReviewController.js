@@ -1,10 +1,13 @@
+const { REVIEW_SOCKET_EVENTS } = require('../constants/socket-event');
 const ReviewService = require('../services/ReviewService');
+const { broadcast } = require("../socket/index")
 
 class ReviewController {
     // Create a new review
     static async addNewReview(req, res) {
         const { title, content } = req.body;
         const review = await ReviewService.createReview({ title, content })
+        broadcast({ type: REVIEW_SOCKET_EVENTS.ADD_REVIEW, review });
         res.status(201).json(review);
 
     }
@@ -33,8 +36,8 @@ class ReviewController {
         const { title, content } = req.body;
 
         const updated = await ReviewService.updateReviewById(id, { title, content });
-
         if (updated) {
+            broadcast({ type: REVIEW_SOCKET_EVENTS.UPDATE_REVIEW, id, review: { title, content, updatedAt: new Date() } });
             res.status(200).json({ message: 'Review updated successfully' });
         } else {
             res.status(400).json({ message: 'Review can not be updated' });
@@ -47,6 +50,7 @@ class ReviewController {
         const { id } = req.params;
         const deleted = await ReviewService.deleteReviewById(id)
         if (deleted) {
+            broadcast({ type: REVIEW_SOCKET_EVENTS.DELETE_REVIEW,id });
             res.status(200).json({ message: 'Review deleted successfully' });
         } else {
             res.status(400).json({ message: 'Review can not be deleted' });

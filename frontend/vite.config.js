@@ -10,7 +10,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      "/review": "http://localhost:6000",
+      "/review": "http://localhost:8080",
     }
   },
 })

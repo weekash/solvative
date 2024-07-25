@@ -1,35 +1,41 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-// import { io } from 'socket.io-client';
 import { deleteReviewById, getAllReviews } from '../../services/api';
 import Button from '../../components/button/Button';
 export default function ReviewTable() {
     const [reviews, setReviews] = useState([]);
 
-    // function addSocket(){
-    //     const socket = io('http://localhost:3000');
-    //     socket.on('message', (message) => {
-    //         switch (message.type) {
-    //             case 'ADD_REVIEW':
-    //                 setReviews((prev) => [message.review, ...prev]);
-    //                 break;
-    //             case 'EDIT_REVIEW':
-    //                 setReviews((prev) =>
-    //                     prev.map((review) =>
-    //                         review.id === message.id ? { ...review, ...message.review } : review
-    //                     )
-    //                 );
-    //                 break;
-    //             case 'DELETE_REVIEW':
-    //                 setReviews((prev) => prev.filter((review) => review.id !== message.id));
-    //                 break;
-    //             default:
-    //                 break;
-    //         }
-    //     });
+    function addSocket() {
+        const socket = new WebSocket('ws://localhost:8000');
+        if (!socket) {
+            return;
+        }
+        socket.onopen = () => {
+            console.log('Connected to WebSocket server');
+        };
+        socket.onmessage = (ev) => {
+            const {type, review,id} = JSON.parse(ev.data)
+            switch (type) {
+                case 'ADD_REVIEW':
+                    setReviews((prev) => [review, ...prev]);
+                    break;
+                case 'UPDATE_REVIEW':
+                    setReviews((prev) =>
+                        prev.map((prevReview) =>
+                            prevReview.id === id ? {...prevReview,  ...review } : prevReview
+                        )
+                    );
+                    break;
+                case 'DELETE_REVIEW':
+                    setReviews((prev) => prev.filter((review) => review.id !== id));
+                    break;
+                default:
+                    break;
+            }
+        }
 
-    //     return () => socket.disconnect();
-    // }
+        return () => socket.close();
+    }
     useEffect(() => {
         const fetchReviews = async () => {
             const { data } = await getAllReviews();
@@ -37,16 +43,17 @@ export default function ReviewTable() {
         };
 
         fetchReviews();
+        addSocket()
     }, []);
 
 
-    async function handleDelete(id){
-        const {data,error} = await deleteReviewById(id)
-        if(error){
+    async function handleDelete(id) {
+        const { data, error } = await deleteReviewById(id)
+        if (error) {
             alert("Review cannot be deleted")
-        }else{
+        } else {
             alert("Review Deleted Successfully")
-            setReviews((reviews)=>reviews.filter(({id:itemId})=>itemId!=id))
+            setReviews((reviews) => reviews.filter(({ id: itemId }) => itemId != id))
         }
     }
 

@@ -1,6 +1,6 @@
 const WebSocket = require('ws');
-
-const wss = new WebSocket.Server({ noServer: true });
+const {server} = require("../server")
+const wss = new WebSocket.Server({ port: 8000 });
 
 const broadcast = (message) => {
   wss.clients.forEach((client) => {
