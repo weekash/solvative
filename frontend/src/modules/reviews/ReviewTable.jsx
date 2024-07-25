@@ -1,15 +1,40 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { deleteReviewById, getAllReviews } from '../../services/api';
 import Button from '../../components/button/Button';
+import { formatTimestamp } from '../../utils/time';
+
+const FLASH_CLASS = {
+    "add":"flash-green",
+    "edit":"flash-blue",
+    "delete":"flash-red"
+}
+const FLASH_DURATION = 3000
+
 export default function ReviewTable() {
     const [reviews, setReviews] = useState([]);
+    const [flashClass, setFlashClass] = useState("")
+    const [flashElement, setFlashElement] = useState("")
+    const timerRef = useRef()
+    const socketRef = useRef()
+    
+    function handleFlash(type, id, callback){
+        setFlashElement(id)
+        setFlashClass(FLASH_CLASS[type])
+        if (timerRef.current) {
+            clearTimeout(timerRef.current);
+        }
+        timerRef.current = setTimeout(()=>{
+            setFlashClass("")
+            setFlashElement("")
+            callback && callback()
+        },FLASH_DURATION)
+
+    }
 
     function addSocket() {
         const socket = new WebSocket('ws://localhost:8000');
-        if (!socket) {
-            return;
-        }
+        socketRef.current = socket;
         socket.onopen = () => {
             console.log('Connected to WebSocket server');
         };
@@ -18,6 +43,7 @@ export default function ReviewTable() {
             switch (type) {
                 case 'ADD_REVIEW':
                     setReviews((prev) => [review, ...prev]);
+                    handleFlash("add",review.id)
                     break;
                 case 'UPDATE_REVIEW':
                     setReviews((prev) =>
@@ -25,17 +51,17 @@ export default function ReviewTable() {
                             prevReview.id === id ? {...prevReview,  ...review } : prevReview
                         )
                     );
+                    handleFlash("edit",id)
                     break;
                 case 'DELETE_REVIEW':
-                    setReviews((prev) => prev.filter((review) => review.id !== id));
+                    handleFlash("delete",id, ()=> setReviews((prev) => prev.filter((review) => review.id !== id)))    
                     break;
                 default:
                     break;
             }
         }
-
-        return () => socket.close();
     }
+
     useEffect(() => {
         const fetchReviews = async () => {
             const { data } = await getAllReviews();
@@ -44,6 +70,14 @@ export default function ReviewTable() {
 
         fetchReviews();
         addSocket()
+        return ()=>{
+            if (socketRef.current) {
+                socketRef.current.close();
+            }
+            if (timerRef.current) {
+                clearTimeout(timerRef.current);
+            }
+        }
     }, []);
 
 
@@ -72,17 +106,17 @@ export default function ReviewTable() {
                         </tr>
                     </thead>
                     <tbody>
-                        {reviews.map((review, index) => (
-                            <tr key={review.id}>
+                        {reviews.map(({id,title,content,createdAt}, index) => (
+                            <tr key={id} className={flashElement==id ? flashClass : ''}>
                                 <td>{index + 1}</td>
-                                <td>{review.title}</td>
-                                <td>{review.content}</td>
-                                <td>{new Date(review.createdAt).toLocaleString()}</td>
+                                <td>{title}</td>
+                                <td>{content}</td>
+                                <td>{formatTimestamp(createdAt)}</td>
                                 <td>
-                                    <Link to={`/${review.id}`}>Edit</Link>
+                                    <Link to={`/${id}`}>Edit</Link>
                                 </td>
                                 <td>
-                                    <Button variant={"danger"} onClick={() => handleDelete(review.id)}>Delete</Button>
+                                    <Button variant={"danger"} onClick={() => handleDelete(id)}>Delete</Button>
                                 </td>
                             </tr>
                         ))}

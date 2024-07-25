@@ -5,10 +5,10 @@ This project aims to implement review CRUD operations.
 ## Features
 
 - **CRUD**: Fully supports crud operations.
+- **Web Sockets**: Uses web sockets to signify real time updates.
 
 ## To Be Done
-
-- **Web Sockets**: Need to integrate web sockets.
+ - Search, Sorting and Unit Test cases. 
 
 ## Project Structure
 
